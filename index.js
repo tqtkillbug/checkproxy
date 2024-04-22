@@ -2,6 +2,8 @@ const express = require('express')
 const app = express()
 const port = 3000
 const proxy_check = require('proxy-check');
+const REQUEST = require('request'); // Import module request
+
 
 
 
@@ -29,9 +31,36 @@ app.post('/api/check', async (req, res) => {
     res.status(200).send(result);
 })
 
+app.post('/api/check', async (req, res) => {
+    var proxy = req.body.proxy;
+    var split = proxy.split(":");
+    if (split.length !== 4) return "FALSE";
+    let host = split[0];
+    let port = split[1];
+    let username = split[2];
+    let pass = split[3];
+    const pCheck = {
+        host: host,
+        port: port,
+        proxyAuth: username + ":" + pass
+    }
+    var result = await check(pCheck)
+    res.status(200).send(result);
+})
+
+app.post('/api/info', async (req, res) => {
+    var proxy = req.body.proxy;
+    var split = proxy.split(":");
+    if (split.length !== 4) return "{}";
+    let host = split[0];
+    var result = await getInfo(host)
+    res.status(200).send(result);
+})
+
 app.listen(port, () => {
     console.log(`Example app listening on port ${port}`)
 })
+
 
 
 
@@ -45,3 +74,30 @@ const check = async (proxy) => {
         return "FALSE";
     }
 };
+
+
+const getInfo = async (ip) => {
+    const options = {
+        url: 'http://ip-api.com/json/' + ip,
+    };
+
+    try {
+        // Sử dụng promise để gửi yêu cầu HTTP đồng bộ
+        const body = await new Promise((resolve, reject) => {
+            REQUEST(options, function (error, response, body) {
+                if (error) {
+                    reject(error); // Nếu có lỗi, reject promise với thông tin lỗi
+                } else {
+                    resolve(body); // Nếu không có lỗi, resolve promise với nội dung phản hồi
+                }
+            });
+        });
+
+        return body;
+    } catch (error) {
+        return "{}";
+    }
+};
+
+
+
